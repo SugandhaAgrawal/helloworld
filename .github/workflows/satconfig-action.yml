@@ -16,7 +16,8 @@ on:
 
 # Environment variables available to all jobs and steps in this workflow
 env:
-  IBM_CLOUD_API_KEY: '${{ secrets.IBM_CLOUD_API_KEY }}'
+  # IBM_CLOUD_API_KEY: '${{ secrets.IBM_CLOUD_API_KEY }}'
+  IBM_CLOUD_API_KEY: test
   IBM_CLOUD_REGION: us-south
 
   SAT_CONFIG_NAME: actions-config
