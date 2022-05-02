@@ -16,12 +16,12 @@ on:
 
 # Environment variables available to all jobs and steps in this workflow
 env:
-  IBM_CLOUD_API_KEY: ${{secrets.IBM_CLOUD_API_KEY}}
+  IBM_CLOUD_API_KEY: '${{ secrets.IBM_CLOUD_API_KEY }}'
   IBM_CLOUD_REGION: us-south
 
   SAT_CONFIG_NAME: actions-config
   SAT_GROUP_NAME: actions-cluster-group
-  SAT_CLUSTER_NAME: ${{secrets.IKS_CLUSTER}}
+  SAT_CLUSTER_NAME: '${{ secrets.IKS_CLUSTER }}'
   SAT_SUB_NAME: actions-subscription
   GITHUB_SHA: ${{ github.sha }}
   GITHUB_TAG: ${{github.ref_name}}
