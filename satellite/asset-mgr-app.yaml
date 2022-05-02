@@ -6,22 +6,22 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: asset-mgr-app-v2
+  name: app-1
   namespace: actions-namespace
   labels:
     test: release-v0.0.4
 spec:
   selector:
     matchLabels:
-      app: asset-mgr-app
+      app: app-1
   replicas: 2
   template:
     metadata:
       labels:
-        app: asset-mgr-app
+        app: app-1
     spec:
       containers:
-        - name: asset-mgr-app
+        - name: app-1
           image: greghint/cloudsat
           ports:
             - containerPort: 8080
@@ -29,11 +29,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: asset-mgr-app
+  name: app-1
   namespace: actions-namespace
 spec:
   selector:
-    app: asset-mgr-app
+    app: app-1
   ports:
     - protocol: TCP
       port: 8080
@@ -42,11 +42,11 @@ spec:
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: asset-mgr-app
+  name: app-1
   namespace: actions-namespace
 spec:
   to:
     kind: Service
-    name: asset-mgr-app
+    name: app-1
   port:
     targetPort: 8080
