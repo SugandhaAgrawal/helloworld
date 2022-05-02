@@ -50,3 +50,4 @@ spec:
     name: app-1
   port:
     targetPort: 8080
+   
