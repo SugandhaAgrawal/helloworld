@@ -1,0 +1,3 @@
+[submodule "stocktrader-gitops"]
+	path = stocktrader-gitops
+	url = https://github.com/SugandhaAgrawal/stocktrader-gitops.git
