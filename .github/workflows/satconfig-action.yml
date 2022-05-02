@@ -1,0 +1,116 @@
+# This workflow deploys StockTrder CR to OCP cluster in IBM Cloud
+#
+### Before you begin:
+# - Have access to IBM Cloud and OCP cluster
+
+name: Update satellite config
+
+on: 
+  push:
+#    tags:
+#      - '*'
+    branches:
+      - main 
+    paths:
+    - 'satellite/**'
+
+# Environment variables available to all jobs and steps in this workflow
+env:
+  IBM_CLOUD_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
+  IBM_CLOUD_REGION: us-south
+
+  SAT_CONFIG_NAME: actions-config
+  SAT_GROUP_NAME: actions-cluster-group
+  SAT_CLUSTER_NAME: ${{ secrets.IKS_CLUSTER }}
+  SAT_SUB_NAME: actions-subscription
+  GITHUB_SHA: ${{ github.sha }}
+  GITHUB_TAG: ${{github.ref_name}}
+ 
+jobs:  
+  update-sat-config:
+    name: Update satellite config
+    runs-on: ubuntu-latest
+    steps:
+    # Checkout repo   
+    - name: Checkout
+      uses: actions/checkout@v2    
+    # Download and Install IBM Cloud CLI
+    - name: Install IBM Cloud CLI
+      run: |
+        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+        ibmcloud --version
+        ibmcloud config --check-version=false
+        ibmcloud plugin install -f kubernetes-service
+        ibmcloud plugin install -f container-registry
+    # Authenticate with IBM Cloud CLI
+    - name: Authenticate with IBM Cloud CLI
+      run: |
+        ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" -r "${IBM_CLOUD_REGION}"
+        # commented out cr login as not needed here
+        # ibmcloud cr region-set "${IBM_CLOUD_REGION}"
+        # ibmcloud cr login
+        
+    # Create cluster group
+    - name: Create cluster group
+      run: |
+        ibmcloud sat group ls
+        set +e
+        ibmcloud sat group get --group "${SAT_GROUP_NAME}" -q
+        if [ $? -eq 1 ]
+        then
+          set -e
+          echo "No group creating"
+          ibmcloud sat group create --name "${SAT_GROUP_NAME}" -q
+          
+          ARRAY=($SAT_CLUSTER_NAME)
+          for element in "${ARRAY[@]}"; do
+            echo "Adding cluster $element"
+            ibmcloud sat group attach --cluster $element --group "${SAT_GROUP_NAME}" -q
+          done
+        else
+          set -e
+          echo "Config ${SAT_GROUP_NAME} already exists."
+          
+        fi
+    
+    # Create sat config
+    - name: Create sat config
+      run: |
+        ibmcloud sat config ls
+        set +e
+        ibmcloud sat config get --config "${SAT_CONFIG_NAME}" -q
+        if [ $? -eq 1 ]
+        then
+          set -e
+          echo "No config creating"
+          ibmcloud sat config create --name "${SAT_CONFIG_NAME}" -q
+        else
+          set -e
+          echo "Config ${SAT_CONFIG_NAME} already exists."
+        fi
+
+       
+    # Create version
+    - name: Create version
+      run: |
+        echo "git sha: ${GITHUB_SHA}"
+        echo "git tag: ${GITHUB_TAG}"
+        ibmcloud sat config version create --name "${GITHUB_TAG}" --read-config satellite/asset-mgr-app.yaml --config "${SAT_CONFIG_NAME}" --file-format yaml -q
+
+    # Create subscription
+    - name: Create subscription
+      run: |
+        ibmcloud sat subscription ls
+        set +e
+        # get command bug workaroud with grep
+        ibmcloud sat subscription get --subscription "${SAT_SUB_NAME}" -q | grep "${SAT_SUB_NAME}"
+        if [ $? -eq 1 ]
+        then
+          set -e
+          echo "No subscription - creating"
+          ibmcloud sat subscription create --name "${SAT_SUB_NAME}" --group "${SAT_GROUP_NAME}" --config "${SAT_CONFIG_NAME}" --version "${GITHUB_TAG}" -q
+        else
+          set -e
+          echo "Subscription ${SAT_SUB_NAME} already exists - updating to the latest version"
+          ibmcloud sat subscription update --subscription "${SAT_SUB_NAME}" --version "${GITHUB_TAG}" -f -q
+        fi
